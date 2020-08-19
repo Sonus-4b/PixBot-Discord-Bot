@@ -1,13 +1,12 @@
 import os
-import random
 import discord
 from dotenv import load_dotenv
-import pymongo
 from discord.ext import commands
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
-client = pymongo.MongoClient("mongodb+srv://Sonus:ComboWombo34@4b-dev-storage.exriz.gcp.mongodb.net/discord?retryWrites=true&w=majority")
-db = client['discord']
-collection = db["Pix-Bot Log"]
+gauth = GoogleAuth()
+drive = GoogleDrive(gauth)
 
 
 load_dotenv()
@@ -19,32 +18,19 @@ bot = commands.Bot(command_prefix = '!')
 async def on_ready(): # event handler (create another @client.event to check for a new event)
     print(f'{bot.user} has connected to Discord!')
 
+@bot.command(name = 'pull')
+async def pull_img(ctx, img):
+    file_list = drive.ListFile({'q': f"title contains '{img}' and trashed=false"}).GetList()
+    file_id = file_list[0]['id']  # get the file ID
+    file = drive.CreateFile({'id': file_id})
+    file_name = f'{img}.png'
+    file.GetContentFile(file_name)
+    await ctx.send(file=discord.File(file_name))
 
-# retrieve an item command
-@bot.command(name='pull')
-async def art_pull(ctx, img):
-    result = collection.find_one({"name" : img })
-    if result == None:
-        await ctx.send('Cannot find requested item')
-    else:
-        await ctx.send(result['link'])
-
-# add a new item command
 @bot.command(name = 'add')
-async def art_add(ctx, img, fileName):
-    post = {'name':img, 'link':fileName}
-    collection.insert_one(post)
-    await ctx.send('Image added')
+async def add_image(ctx, img):
+    await save(img)
 
-# delete command
-@bot.command(name = 'delete')
-async def art_delete(ctx, img):
-    result = collection.find_one({"name": img})
-    if result == None:
-        await ctx.send('Cannot find requested item')
-    else:
-        collection.delete_one(result)
-        await ctx.send('Item deleted')
 
 @bot.event
 async def on_error(event, *args, **kwargs):
