@@ -27,10 +27,6 @@ async def pull_img(ctx, img):
     file.GetContentFile(file_name)
     await ctx.send(file=discord.File(file_name))
 
-@bot.command(name = 'add')
-async def add_image(ctx, img):
-    await save(img)
-
 
 @bot.event
 async def on_error(event, *args, **kwargs):
